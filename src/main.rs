@@ -1,5 +1,11 @@
-use gpui::*;
-use gpui_component::{button::*, *};
+use gpui::{
+    AppContext, Application, Context, IntoElement, ParentElement, Render, Styled, Window,
+    WindowOptions, div,
+};
+use gpui_component::{
+    Root, StyledExt,
+    button::{Button, ButtonVariants},
+};
 
 pub struct HelloWorld;
 impl Render for HelloWorld {
