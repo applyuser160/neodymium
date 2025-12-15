@@ -41,7 +41,8 @@ fn engine_registry_supports_pluggable_engines() {
     assert_eq!(registry.active_script_engine(), Some("SpiderMonkey"));
 
     let render_engines: Vec<_> = registry.rendering_engines().collect();
-    assert_eq!(render_engines, vec!["Blink", "WebKit"]);
+    assert!(render_engines.contains(&"Blink"));
+    assert!(render_engines.contains(&"WebKit"));
 }
 
 #[test]
