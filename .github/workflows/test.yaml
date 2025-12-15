@@ -15,6 +15,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+            clang \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libfontconfig-dev \
+            libssl-dev \
+            libasound2-dev \
+            libwayland-dev \
+            libvulkan-dev
+
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
