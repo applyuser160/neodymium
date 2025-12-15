@@ -51,7 +51,10 @@ fn tab_manager_tracks_active_tabs() {
 
     let docs_index = tabs.open_tab("Docs", "https://developer.chrome.com");
     assert_eq!(docs_index, 1);
-    assert_eq!(tabs.active().map(|tab| &tab.title), Some(&"Docs".to_string()));
+    assert_eq!(
+        tabs.active().map(|tab| &tab.title),
+        Some(&"Docs".to_string())
+    );
 
     assert!(tabs.switch_to(0));
     assert_eq!(tabs.active(), Some(&Tab::new("New Tab", "about:blank")));

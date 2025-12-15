@@ -31,10 +31,12 @@ impl Default for TabManager {
 }
 
 impl TabManager {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[allow(dead_code)]
     pub fn open_tab<T: Into<String>, U: Into<String>>(&mut self, title: T, url: U) -> usize {
         let tab = Tab::new(title, url);
         self.tabs.push(tab);
@@ -42,6 +44,7 @@ impl TabManager {
         self.active_index
     }
 
+    #[allow(dead_code)]
     pub fn switch_to(&mut self, index: usize) -> bool {
         if index < self.tabs.len() {
             self.active_index = index;

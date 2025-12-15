@@ -1,8 +1,8 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
-use gpui::{div, px, rgb, Context, IntoElement, ParentElement, Render, Styled, Window};
-use gpui_component::button::{Button, ButtonVariants};
+use gpui::{Context, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb};
 use gpui_component::StyledExt;
+use gpui_component::button::{Button, ButtonVariants};
 
 /// The top-level view for the Chrome-inspired browser UI.
 pub struct BrowserView {
@@ -64,8 +64,7 @@ impl BrowserView {
 
         for (index, tab) in self.tabs.tabs().iter().enumerate() {
             let is_active = Some(tab) == self.tabs.active();
-            let tab_button = Button::new(("tab", index as u32))
-                .label(tab.title.clone());
+            let tab_button = Button::new(("tab", index as u32)).label(tab.title.clone());
             let tab_button = if is_active {
                 tab_button.primary()
             } else {
@@ -185,6 +184,7 @@ enum EngineKind {
 #[derive(Clone)]
 struct BuiltinEngine {
     name: String,
+    #[allow(dead_code)]
     kind: EngineKind,
 }
 

@@ -4,20 +4,24 @@ use std::sync::Arc;
 /// A pluggable rendering engine that can be swapped at runtime.
 pub trait RenderingEngine: Send + Sync {
     fn name(&self) -> &str;
+
+    #[allow(dead_code)]
     fn render(&self, url: &str) -> String;
 }
 
 /// A pluggable JavaScript engine that can be swapped at runtime.
 pub trait ScriptEngine: Send + Sync {
     fn name(&self) -> &str;
+
+    #[allow(dead_code)]
     fn execute(&self, script: &str) -> String;
 }
 
 /// Tracks available rendering and script engines to keep the UI decoupled from the backend.
 #[derive(Default)]
 pub struct EngineRegistry {
-    rendering_engines: HashMap<String, Arc<dyn RenderingEngine>>, 
-    script_engines: HashMap<String, Arc<dyn ScriptEngine>>, 
+    rendering_engines: HashMap<String, Arc<dyn RenderingEngine>>,
+    script_engines: HashMap<String, Arc<dyn ScriptEngine>>,
     active_rendering_engine: Option<String>,
     active_script_engine: Option<String>,
 }
@@ -32,7 +36,8 @@ impl EngineRegistry {
         E: RenderingEngine + 'static,
     {
         let name = engine.name().to_string();
-        self.rendering_engines.insert(name.clone(), Arc::new(engine));
+        self.rendering_engines
+            .insert(name.clone(), Arc::new(engine));
         self.active_rendering_engine.get_or_insert(name);
     }
 
@@ -45,6 +50,7 @@ impl EngineRegistry {
         self.active_script_engine.get_or_insert(name);
     }
 
+    #[allow(dead_code)]
     pub fn set_active_rendering_engine(&mut self, name: &str) -> bool {
         if self.rendering_engines.contains_key(name) {
             self.active_rendering_engine = Some(name.to_string());
@@ -54,6 +60,7 @@ impl EngineRegistry {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_active_script_engine(&mut self, name: &str) -> bool {
         if self.script_engines.contains_key(name) {
             self.active_script_engine = Some(name.to_string());
@@ -71,10 +78,12 @@ impl EngineRegistry {
         self.active_script_engine.as_deref()
     }
 
+    #[allow(dead_code)]
     pub fn rendering_engines(&self) -> impl Iterator<Item = &str> {
         self.rendering_engines.keys().map(|name| name.as_str())
     }
 
+    #[allow(dead_code)]
     pub fn script_engines(&self) -> impl Iterator<Item = &str> {
         self.script_engines.keys().map(|name| name.as_str())
     }
