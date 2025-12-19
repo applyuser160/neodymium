@@ -44,6 +44,26 @@ impl TabManager {
         self.active_index
     }
 
+    pub fn close_tab(&mut self, index: usize) {
+        if index >= self.tabs.len() {
+            return;
+        }
+        self.tabs.remove(index);
+
+        if self.tabs.is_empty() {
+            self.active_index = 0;
+            return;
+        }
+
+        if self.active_index > index {
+            self.active_index -= 1;
+        } else if self.active_index == index {
+            if self.active_index >= self.tabs.len() {
+                self.active_index = self.tabs.len() - 1;
+            }
+        }
+    }
+
     #[allow(dead_code)]
     pub fn switch_to(&mut self, index: usize) -> bool {
         if index < self.tabs.len() {
@@ -60,5 +80,43 @@ impl TabManager {
 
     pub fn tabs(&self) -> &[Tab] {
         &self.tabs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_close_tab() {
+        let mut manager = TabManager::default();
+        // Default has 1 tab at index 0.
+
+        // Add 2 more tabs
+        manager.open_tab("Tab 1", "url1");
+        manager.open_tab("Tab 2", "url2");
+        // State: [Default(0), Tab 1(1), Tab 2(2)], active = 2
+
+        assert_eq!(manager.tabs().len(), 3);
+        assert_eq!(manager.active_index, 2);
+
+        // Close the active tab (index 2)
+        manager.close_tab(2);
+        // State: [Default(0), Tab 1(1)], active should be 1
+        assert_eq!(manager.tabs().len(), 2);
+        assert_eq!(manager.active_index, 1);
+        assert_eq!(manager.tabs()[1].title, "Tab 1");
+
+        // Close a tab before active (index 0)
+        manager.close_tab(0);
+        // State: [Tab 1(0)], active was 1, now should be 0
+        assert_eq!(manager.tabs().len(), 1);
+        assert_eq!(manager.active_index, 0);
+        assert_eq!(manager.tabs()[0].title, "Tab 1");
+
+        // Close the last remaining tab
+        manager.close_tab(0);
+        assert_eq!(manager.tabs().len(), 0);
+        assert_eq!(manager.active_index, 0); // Safety check
     }
 }

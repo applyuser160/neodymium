@@ -1,18 +1,19 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
-use gpui::{Context, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb};
+use gpui::{AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb};
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
+use gpui_component::input::{Input, InputEvent, InputState};
 
 /// The top-level view for the Chrome-inspired browser UI.
 pub struct BrowserView {
     tabs: TabManager,
     engines: EngineRegistry,
-    address_bar: String,
+    address_bar: Entity<InputState>,
 }
 
-impl Default for BrowserView {
-    fn default() -> Self {
+impl BrowserView {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let mut engines = EngineRegistry::new();
         engines.register_rendering_engine(BuiltinEngine {
             name: "Blink".to_string(),
@@ -31,29 +32,49 @@ impl Default for BrowserView {
             kind: EngineKind::Script,
         });
 
+        let address_bar = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value("https://example.com")
+                .placeholder("Search or enter address")
+        });
+
+        // Subscribe to input events to update the "model" if needed,
+        // though InputState holds the text value itself.
+        cx.subscribe_in(&address_bar, window, |view, _state, event, _window, _cx| {
+             if let InputEvent::Change = event {
+                 // Logic to handle address bar change if we need to sync it to something else.
+                 // For now, the state is inside InputState.
+                 // We might want to trigger navigation on Enter.
+             }
+        }).detach();
+
+
         Self {
             tabs: TabManager::default(),
             engines,
-            address_bar: "https://example.com".to_string(),
+            address_bar,
         }
     }
 }
 
+// We cannot implement Default easily because we need `window` and `cx` to create Entity<InputState>.
+// We will change `main.rs` to call `BrowserView::new` instead of `BrowserView::default`.
+
 impl Render for BrowserView {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .size_full()
             .bg(rgb(0x181a1b))
             .text_color(rgb(0xf0f0f0))
             .v_flex()
-            .child(self.render_tab_strip())
-            .child(self.render_toolbar())
+            .child(self.render_tab_strip(cx))
+            .child(self.render_toolbar(cx))
             .child(self.render_content())
     }
 }
 
 impl BrowserView {
-    fn render_tab_strip(&self) -> impl IntoElement {
+    fn render_tab_strip(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let mut strip = div()
             .bg(rgb(0x292b2c))
             .h_flex()
@@ -64,33 +85,60 @@ impl BrowserView {
 
         for (index, tab) in self.tabs.tabs().iter().enumerate() {
             let is_active = Some(tab) == self.tabs.active();
-            let tab_button = Button::new(("tab", index as u32)).label(tab.title.clone());
-            let tab_button = if is_active {
-                tab_button.primary()
+
+            let close_btn = Button::new(("close-tab", index))
+                .label("×")
+                .ghost()
+                .rounded_full()
+                .px(px(6.))
+                .py(px(0.))
+                .on_click(cx.listener(move |view: &mut BrowserView, _, _window, cx| {
+                    view.tabs.close_tab(index);
+                    cx.notify();
+                }));
+
+            let tab_content = div()
+                .flex_row()
+                .items_center()
+                .gap_1()
+                .child(tab.title.clone())
+                .child(close_btn);
+
+            let mut tab_button = Button::new(("tab", index))
+                .children(vec![tab_content.into_any_element()])
+                .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
+                     view.tabs.switch_to(index);
+                     cx.notify();
+                }));
+
+            if is_active {
+                tab_button = tab_button.primary();
             } else {
-                tab_button.ghost()
+                tab_button = tab_button.ghost();
             }
-            .px(px(12.))
-            .py(px(6.));
+            tab_button = tab_button.px(px(12.)).py(px(6.));
 
             strip = strip.child(tab_button);
-
-            if index == self.tabs.tabs().len() - 1 {
-                strip = strip.child(
-                    Button::new("new-tab")
-                        .label("+")
-                        .ghost()
-                        .rounded_full()
-                        .px(px(8.))
-                        .py(px(4.)),
-                );
-            }
         }
+
+        // Add new tab button
+        strip = strip.child(
+            Button::new("new-tab")
+                .label("+")
+                .ghost()
+                .rounded_full()
+                .px(px(8.))
+                .py(px(4.))
+                .on_click(cx.listener(|view: &mut BrowserView, _, _, cx| {
+                    view.tabs.open_tab("New Tab", "about:blank");
+                    cx.notify();
+                })),
+        );
 
         strip
     }
 
-    fn render_toolbar(&self) -> impl IntoElement {
+    fn render_toolbar(&self, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .bg(rgb(0x1f2122))
             .h_flex()
@@ -130,7 +178,9 @@ impl BrowserView {
                     .px(px(14.))
                     .py(px(8.))
                     .flex_grow()
-                    .child(self.address_bar.clone()),
+                    .child(
+                        Input::new(&self.address_bar)
+                    ),
             )
             .child(
                 Button::new("menu")
