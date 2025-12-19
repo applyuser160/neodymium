@@ -1,6 +1,6 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
-use gpui::{AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb};
+use gpui::{AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb, InteractiveElement, StatefulInteractiveElement};
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
 use gpui_component::input::{Input, InputEvent, InputState};
@@ -38,13 +38,9 @@ impl BrowserView {
                 .placeholder("Search or enter address")
         });
 
-        // Subscribe to input events to update the "model" if needed,
-        // though InputState holds the text value itself.
         cx.subscribe_in(&address_bar, window, |view, _state, event, _window, _cx| {
              if let InputEvent::Change = event {
-                 // Logic to handle address bar change if we need to sync it to something else.
-                 // For now, the state is inside InputState.
-                 // We might want to trigger navigation on Enter.
+                 // Logic to handle address bar change
              }
         }).detach();
 
@@ -56,9 +52,6 @@ impl BrowserView {
         }
     }
 }
-
-// We cannot implement Default easily because we need `window` and `cx` to create Entity<InputState>.
-// We will change `main.rs` to call `BrowserView::new` instead of `BrowserView::default`.
 
 impl Render for BrowserView {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -86,6 +79,7 @@ impl BrowserView {
         for (index, tab) in self.tabs.tabs().iter().enumerate() {
             let is_active = Some(tab) == self.tabs.active();
 
+            // Close button
             let close_btn = Button::new(("close-tab", index))
                 .label("×")
                 .ghost()
@@ -97,28 +91,32 @@ impl BrowserView {
                     cx.notify();
                 }));
 
-            let tab_content = div()
-                .flex_row()
+            // Tab container styling
+            let mut tab_container = div()
+                .id(("tab", index))
+                .h_flex()
                 .items_center()
-                .gap_1()
-                .child(tab.title.clone())
-                .child(close_btn);
-
-            let mut tab_button = Button::new(("tab", index))
-                .children(vec![tab_content.into_any_element()])
+                .gap_2()
+                .px(px(12.))
+                .py(px(6.))
+                .rounded_md()
+                .cursor_pointer()
                 .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
                      view.tabs.switch_to(index);
                      cx.notify();
                 }));
 
             if is_active {
-                tab_button = tab_button.primary();
+                tab_container = tab_container.bg(rgb(0x3a3d3e)).text_color(rgb(0xffffff));
             } else {
-                tab_button = tab_button.ghost();
+                tab_container = tab_container.text_color(rgb(0xaaaaaa)).hover(|s| s.bg(rgb(0x333536)));
             }
-            tab_button = tab_button.px(px(12.)).py(px(6.));
 
-            strip = strip.child(tab_button);
+            tab_container = tab_container
+                .child(tab.title.clone())
+                .child(close_btn);
+
+            strip = strip.child(tab_container);
         }
 
         // Add new tab button
@@ -178,8 +176,11 @@ impl BrowserView {
                     .px(px(14.))
                     .py(px(8.))
                     .flex_grow()
+                    // Use appearance(false) to remove default Input styling,
+                    // matching the container's white bg and rounded look.
                     .child(
                         Input::new(&self.address_bar)
+                            .appearance(false)
                     ),
             )
             .child(
