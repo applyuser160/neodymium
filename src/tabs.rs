@@ -52,6 +52,8 @@ impl TabManager {
 
         if self.tabs.is_empty() {
             self.active_index = 0;
+            // Ensure there is always at least one tab
+            self.open_tab("New Tab", "about:blank");
             return;
         }
 
@@ -72,6 +74,10 @@ impl TabManager {
         }
     }
 
+    pub fn close_active_tab(&mut self) {
+        self.close_tab(self.active_index);
+    }
+
     pub fn active(&self) -> Option<&Tab> {
         self.tabs.get(self.active_index)
     }
@@ -80,6 +86,10 @@ impl TabManager {
         if let Some(tab) = self.tabs.get_mut(self.active_index) {
             tab.url = url.into();
         }
+    }
+
+    pub fn active_index(&self) -> usize {
+        self.active_index
     }
 
     pub fn tabs(&self) -> &[Tab] {
@@ -120,8 +130,32 @@ mod tests {
 
         // Close the last remaining tab
         manager.close_tab(0);
-        assert_eq!(manager.tabs().len(), 0);
-        assert_eq!(manager.active_index, 0); // Safety check
+        // Should create a new empty tab
+        assert_eq!(manager.tabs().len(), 1);
+        assert_eq!(manager.active_index, 0);
+        assert_eq!(manager.tabs()[0].title, "New Tab");
+        assert_eq!(manager.tabs()[0].url, "about:blank");
+    }
+
+    #[test]
+    fn test_close_active_tab() {
+        let mut manager = TabManager::default();
+        manager.open_tab("Tab 1", "url1");
+        manager.switch_to(1);
+
+        assert_eq!(manager.active_index, 1);
+        assert_eq!(manager.tabs().len(), 2);
+
+        manager.close_active_tab();
+        assert_eq!(manager.tabs().len(), 1);
+        assert_eq!(manager.active_index, 0);
+        assert_eq!(manager.tabs()[0].title, "New Tab");
+
+        // Test closing the last remaining tab
+        manager.close_active_tab();
+        assert_eq!(manager.tabs().len(), 1);
+        assert_eq!(manager.active_index, 0);
+        assert_eq!(manager.tabs()[0].title, "New Tab");
     }
 
     #[test]
