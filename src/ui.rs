@@ -47,10 +47,7 @@ impl BrowserView {
             |view, state, event, _window, cx| {
                 if let InputEvent::PressEnter { .. } = event {
                     let url = state.read(cx).text().to_string();
-                    view.tabs.navigate(url.clone());
-                    state.update(cx, |input_state, _cx| {
-                        input_state.set_text(url);
-                    });
+                    view.tabs.navigate(url);
                     cx.notify();
                 }
             },
@@ -115,11 +112,7 @@ impl BrowserView {
                 .cursor_pointer()
                 .on_click(cx.listener(move |view: &mut BrowserView, _, window, cx| {
                     if view.tabs.switch_to(index) {
-                        if let Some(tab) = view.tabs.active() {
-                            let url = tab.url.clone();
-                            view.address_bar
-                                .update(cx, |state, cx| state.set_value(url, window, cx));
-                        }
+                        view.update_address_bar_from_active_tab(window, cx);
                     }
                     cx.notify();
                 }));
@@ -147,11 +140,7 @@ impl BrowserView {
                 .py(px(4.))
                 .on_click(cx.listener(|view: &mut BrowserView, _, window, cx| {
                     view.tabs.open_tab("New Tab", "about:blank");
-                    if let Some(tab) = view.tabs.active() {
-                        let url = tab.url.clone();
-                        view.address_bar
-                            .update(cx, |state, cx| state.set_value(url, window, cx));
-                    }
+                    view.update_address_bar_from_active_tab(window, cx);
                     cx.notify();
                 })),
         );
@@ -200,6 +189,14 @@ impl BrowserView {
                     .px(px(10.))
                     .py(px(6.)),
             )
+    }
+
+    fn update_address_bar_from_active_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.tabs.active() {
+            let url = tab.url.clone();
+            self.address_bar
+                .update(cx, |state, cx| state.set_value(url, window, cx));
+        }
     }
 
     fn render_content(&self) -> impl IntoElement {
