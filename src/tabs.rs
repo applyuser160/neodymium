@@ -82,6 +82,10 @@ impl TabManager {
         self.tabs.get(self.active_index)
     }
 
+    pub fn active_index(&self) -> usize {
+        self.active_index
+    }
+
     pub fn tabs(&self) -> &[Tab] {
         &self.tabs
     }
