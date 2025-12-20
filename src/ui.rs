@@ -5,6 +5,7 @@ use gpui::{
     StatefulInteractiveElement, Styled, Window, div, px, rgb,
 };
 use gpui_component::StyledExt;
+use gpui_component::Disableable;
 use gpui_component::button::{Button, ButtonVariants};
 use gpui_component::input::{Input, InputEvent, InputState};
 
@@ -44,9 +45,13 @@ impl BrowserView {
         cx.subscribe_in(
             &address_bar,
             window,
-            |_view, _state, event, _window, _cx| {
-                if let InputEvent::Change = event {
-                    // Logic to handle address bar change
+            |view, state, event, _window, cx| {
+                if let InputEvent::PressEnter { .. } = event {
+                   let url = state.read(cx).value();
+                   if let Some(tab) = view.tabs.active_mut() {
+                       tab.navigate(url);
+                       cx.notify();
+                   }
                 }
             },
         )
@@ -143,7 +148,11 @@ impl BrowserView {
         strip
     }
 
-    fn render_toolbar(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_toolbar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let active_tab = self.tabs.active();
+        let can_go_back = active_tab.map_or(false, |t| t.can_go_back());
+        let can_go_forward = active_tab.map_or(false, |t| t.can_go_forward());
+
         div()
             .bg(rgb(0x1f2122))
             .h_flex()
@@ -157,7 +166,19 @@ impl BrowserView {
                     .ghost()
                     .rounded_sm()
                     .px(px(10.))
-                    .py(px(6.)),
+                    .py(px(6.))
+                    .disabled(!can_go_back)
+                    .on_click(cx.listener(|view: &mut BrowserView, _event, window, cx| {
+                        if let Some(tab) = view.tabs.active_mut() {
+                            if tab.go_back() {
+                                let new_url = tab.url().to_string();
+                                view.address_bar.update(cx, |state, cx| {
+                                    state.set_value(new_url, window, cx);
+                                });
+                                cx.notify();
+                            }
+                        }
+                    })),
             )
             .child(
                 Button::new("forward")
@@ -165,7 +186,19 @@ impl BrowserView {
                     .ghost()
                     .rounded_sm()
                     .px(px(10.))
-                    .py(px(6.)),
+                    .py(px(6.))
+                    .disabled(!can_go_forward)
+                    .on_click(cx.listener(|view: &mut BrowserView, _event, window, cx| {
+                         if let Some(tab) = view.tabs.active_mut() {
+                             if tab.go_forward() {
+                                 let new_url = tab.url().to_string();
+                                 view.address_bar.update(cx, |state, cx| {
+                                     state.set_value(new_url, window, cx);
+                                 });
+                                 cx.notify();
+                             }
+                         }
+                    })),
             )
             .child(
                 Button::new("refresh")
