@@ -10,7 +10,25 @@ pub trait RenderingEngine: Send + Sync {
 }
 
 
-pub struct HttpEngine;
+pub struct HttpEngine {
+    client: reqwest::blocking::Client,
+}
+
+impl HttpEngine {
+    pub fn new() -> Self {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .expect("Failed to create HTTP client");
+        Self { client }
+    }
+}
+
+impl Default for HttpEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl RenderingEngine for HttpEngine {
     fn name(&self) -> &str {
@@ -18,7 +36,7 @@ impl RenderingEngine for HttpEngine {
     }
 
     fn render(&self, url: &str) -> String {
-        match reqwest::blocking::get(url) {
+        match self.client.get(url).send() {
             Ok(response) => match response.text() {
                 Ok(text) => text,
                 Err(e) => format!("Error reading body: {}", e),

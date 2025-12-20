@@ -18,7 +18,7 @@ pub struct BrowserView {
 impl BrowserView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let mut engines = EngineRegistry::new();
-        engines.register_rendering_engine(HttpEngine);
+        engines.register_rendering_engine(HttpEngine::new());
         engines.register_rendering_engine(BuiltinEngine {
             name: "Blink".to_string(),
             kind: EngineKind::Rendering,
