@@ -72,6 +72,10 @@ impl TabManager {
         }
     }
 
+    pub fn close_active_tab(&mut self) {
+        self.close_tab(self.active_index);
+    }
+
     pub fn active(&self) -> Option<&Tab> {
         self.tabs.get(self.active_index)
     }
