@@ -84,7 +84,7 @@ impl BrowserView {
             .py(px(8.));
 
         for (index, tab) in self.tabs.tabs().iter().enumerate() {
-            let is_active = Some(tab) == self.tabs.active();
+            let is_active = index == self.tabs.active_index();
 
             // Close button
             let close_btn = Button::new(("close-tab", index))
