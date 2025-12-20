@@ -49,7 +49,10 @@ impl BrowserView {
                 if let InputEvent::PressEnter { .. } = event {
                    let url = state.read(cx).value();
                    if let Some(tab) = view.tabs.active_mut() {
-                       tab.navigate(url);
+                       tab.navigate(url.clone());
+                       state.update(cx, |state, _cx| {
+                           state.set_value(url);
+                       });
                        cx.notify();
                    }
                 }
