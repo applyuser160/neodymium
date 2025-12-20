@@ -9,6 +9,7 @@ pub trait RenderingEngine: Send + Sync {
     fn render(&self, url: &str) -> String;
 }
 
+
 pub struct HttpEngine;
 
 impl RenderingEngine for HttpEngine {
