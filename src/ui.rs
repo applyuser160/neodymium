@@ -1,18 +1,22 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
-use gpui::{Context, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb};
+use gpui::{
+    AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
+    StatefulInteractiveElement, Styled, Window, div, px, rgb,
+};
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
+use gpui_component::input::{Input, InputEvent, InputState};
 
 /// The top-level view for the Chrome-inspired browser UI.
 pub struct BrowserView {
     tabs: TabManager,
     engines: EngineRegistry,
-    address_bar: String,
+    address_bar: Entity<InputState>,
 }
 
-impl Default for BrowserView {
-    fn default() -> Self {
+impl BrowserView {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let mut engines = EngineRegistry::new();
         engines.register_rendering_engine(BuiltinEngine {
             name: "Blink".to_string(),
@@ -31,29 +35,46 @@ impl Default for BrowserView {
             kind: EngineKind::Script,
         });
 
+        let address_bar = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value("https://example.com")
+                .placeholder("Search or enter address")
+        });
+
+        cx.subscribe_in(
+            &address_bar,
+            window,
+            |_view, _state, event, _window, _cx| {
+                if let InputEvent::Change = event {
+                    // Logic to handle address bar change
+                }
+            },
+        )
+        .detach();
+
         Self {
             tabs: TabManager::default(),
             engines,
-            address_bar: "https://example.com".to_string(),
+            address_bar,
         }
     }
 }
 
 impl Render for BrowserView {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .size_full()
             .bg(rgb(0x181a1b))
             .text_color(rgb(0xf0f0f0))
             .v_flex()
-            .child(self.render_tab_strip())
-            .child(self.render_toolbar())
+            .child(self.render_tab_strip(cx))
+            .child(self.render_toolbar(cx))
             .child(self.render_content())
     }
 }
 
 impl BrowserView {
-    fn render_tab_strip(&self) -> impl IntoElement {
+    fn render_tab_strip(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let mut strip = div()
             .bg(rgb(0x292b2c))
             .h_flex()
@@ -64,33 +85,65 @@ impl BrowserView {
 
         for (index, tab) in self.tabs.tabs().iter().enumerate() {
             let is_active = Some(tab) == self.tabs.active();
-            let tab_button = Button::new(("tab", index as u32)).label(tab.title.clone());
-            let tab_button = if is_active {
-                tab_button.primary()
+
+            // Close button
+            let close_btn = Button::new(("close-tab", index))
+                .label("×")
+                .ghost()
+                .rounded_full()
+                .px(px(6.))
+                .py(px(0.))
+                .on_click(cx.listener(move |view: &mut BrowserView, _, _window, cx| {
+                    view.tabs.close_tab(index);
+                    cx.notify();
+                }));
+
+            // Tab container styling
+            let mut tab_container = div()
+                .id(("tab", index))
+                .h_flex()
+                .items_center()
+                .gap_2()
+                .px(px(12.))
+                .py(px(6.))
+                .rounded_md()
+                .cursor_pointer()
+                .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
+                    view.tabs.switch_to(index);
+                    cx.notify();
+                }));
+
+            if is_active {
+                tab_container = tab_container.bg(rgb(0x3a3d3e)).text_color(rgb(0xffffff));
             } else {
-                tab_button.ghost()
+                tab_container = tab_container
+                    .text_color(rgb(0xaaaaaa))
+                    .hover(|s| s.bg(rgb(0x333536)));
             }
-            .px(px(12.))
-            .py(px(6.));
 
-            strip = strip.child(tab_button);
+            tab_container = tab_container.child(tab.title.clone()).child(close_btn);
 
-            if index == self.tabs.tabs().len() - 1 {
-                strip = strip.child(
-                    Button::new("new-tab")
-                        .label("+")
-                        .ghost()
-                        .rounded_full()
-                        .px(px(8.))
-                        .py(px(4.)),
-                );
-            }
+            strip = strip.child(tab_container);
         }
+
+        // Add new tab button
+        strip = strip.child(
+            Button::new("new-tab")
+                .label("+")
+                .ghost()
+                .rounded_full()
+                .px(px(8.))
+                .py(px(4.))
+                .on_click(cx.listener(|view: &mut BrowserView, _, _, cx| {
+                    view.tabs.open_tab("New Tab", "about:blank");
+                    cx.notify();
+                })),
+        );
 
         strip
     }
 
-    fn render_toolbar(&self) -> impl IntoElement {
+    fn render_toolbar(&self, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .bg(rgb(0x1f2122))
             .h_flex()
@@ -122,16 +175,7 @@ impl BrowserView {
                     .px(px(10.))
                     .py(px(6.)),
             )
-            .child(
-                div()
-                    .bg(rgb(0xffffff))
-                    .text_color(rgb(0x222222))
-                    .rounded_full()
-                    .px(px(14.))
-                    .py(px(8.))
-                    .flex_grow()
-                    .child(self.address_bar.clone()),
-            )
+            .child(Input::new(&self.address_bar).rounded_full())
             .child(
                 Button::new("menu")
                     .label("⋮")

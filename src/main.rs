@@ -13,7 +13,7 @@ fn main() {
         gpui_component::init(cx);
         cx.spawn(async move |cx| {
             cx.open_window(WindowOptions::default(), |window, cx| {
-                let view = cx.new(|_| BrowserView::default());
+                let view = cx.new(|cx| BrowserView::new(window, cx));
                 cx.new(|cx| Root::new(view, window, cx))
             })?;
 
