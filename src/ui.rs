@@ -47,7 +47,10 @@ impl BrowserView {
             |view, state, event, _window, cx| {
                 if let InputEvent::PressEnter { .. } = event {
                     let url = state.read(cx).text().to_string();
-                    view.tabs.navigate(url);
+                    view.tabs.navigate(url.clone());
+                    state.update(cx, |input_state, _cx| {
+                        input_state.set_text(url);
+                    });
                     cx.notify();
                 }
             },
