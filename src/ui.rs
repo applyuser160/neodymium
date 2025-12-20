@@ -1,6 +1,9 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
-use gpui::{AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px, rgb, InteractiveElement, StatefulInteractiveElement};
+use gpui::{
+    AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
+    StatefulInteractiveElement, Styled, Window, div, px, rgb,
+};
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
 use gpui_component::input::{Input, InputEvent, InputState};
@@ -38,12 +41,16 @@ impl BrowserView {
                 .placeholder("Search or enter address")
         });
 
-        cx.subscribe_in(&address_bar, window, |view, _state, event, _window, _cx| {
-             if let InputEvent::Change = event {
-                 // Logic to handle address bar change
-             }
-        }).detach();
-
+        cx.subscribe_in(
+            &address_bar,
+            window,
+            |_view, _state, event, _window, _cx| {
+                if let InputEvent::Change = event {
+                    // Logic to handle address bar change
+                }
+            },
+        )
+        .detach();
 
         Self {
             tabs: TabManager::default(),
@@ -102,19 +109,19 @@ impl BrowserView {
                 .rounded_md()
                 .cursor_pointer()
                 .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
-                     view.tabs.switch_to(index);
-                     cx.notify();
+                    view.tabs.switch_to(index);
+                    cx.notify();
                 }));
 
             if is_active {
                 tab_container = tab_container.bg(rgb(0x3a3d3e)).text_color(rgb(0xffffff));
             } else {
-                tab_container = tab_container.text_color(rgb(0xaaaaaa)).hover(|s| s.bg(rgb(0x333536)));
+                tab_container = tab_container
+                    .text_color(rgb(0xaaaaaa))
+                    .hover(|s| s.bg(rgb(0x333536)));
             }
 
-            tab_container = tab_container
-                .child(tab.title.clone())
-                .child(close_btn);
+            tab_container = tab_container.child(tab.title.clone()).child(close_btn);
 
             strip = strip.child(tab_container);
         }
@@ -168,21 +175,7 @@ impl BrowserView {
                     .px(px(10.))
                     .py(px(6.)),
             )
-            .child(
-                div()
-                    .bg(rgb(0xffffff))
-                    .text_color(rgb(0x222222))
-                    .rounded_full()
-                    .px(px(14.))
-                    .py(px(8.))
-                    .flex_grow()
-                    // Use appearance(false) to remove default Input styling,
-                    // matching the container's white bg and rounded look.
-                    .child(
-                        Input::new(&self.address_bar)
-                            .appearance(false)
-                    ),
-            )
+            .child(Input::new(&self.address_bar).rounded_full())
             .child(
                 Button::new("menu")
                     .label("⋮")

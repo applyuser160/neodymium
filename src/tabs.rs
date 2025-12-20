@@ -57,10 +57,8 @@ impl TabManager {
 
         if self.active_index > index {
             self.active_index -= 1;
-        } else if self.active_index == index {
-            if self.active_index >= self.tabs.len() {
-                self.active_index = self.tabs.len() - 1;
-            }
+        } else if self.active_index == index && self.active_index >= self.tabs.len() {
+            self.active_index = self.tabs.len() - 1;
         }
     }
 
