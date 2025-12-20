@@ -116,8 +116,10 @@ impl BrowserView {
                 .py(px(6.))
                 .rounded_md()
                 .cursor_pointer()
-                .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
-                    view.tabs.switch_to(index);
+                .on_click(cx.listener(move |view: &mut BrowserView, _, window, cx| {
+                    if view.tabs.switch_to(index) {
+                        view.update_address_bar_from_active_tab(window, cx);
+                    }
                     cx.notify();
                 }));
 
@@ -142,8 +144,9 @@ impl BrowserView {
                 .rounded_full()
                 .px(px(8.))
                 .py(px(4.))
-                .on_click(cx.listener(|view: &mut BrowserView, _, _, cx| {
+                .on_click(cx.listener(|view: &mut BrowserView, _, window, cx| {
                     view.tabs.open_tab("New Tab", "about:blank");
+                    view.update_address_bar_from_active_tab(window, cx);
                     cx.notify();
                 })),
         );
@@ -220,6 +223,14 @@ impl BrowserView {
                     .px(px(10.))
                     .py(px(6.)),
             )
+    }
+
+    fn update_address_bar_from_active_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = self.tabs.active() {
+            let url = tab.url.clone();
+            self.address_bar
+                .update(cx, |state, cx| state.set_value(url, window, cx));
+        }
     }
 
     fn render_content(&self) -> impl IntoElement {
