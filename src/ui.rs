@@ -44,9 +44,11 @@ impl BrowserView {
         cx.subscribe_in(
             &address_bar,
             window,
-            |_view, _state, event, _window, _cx| {
-                if let InputEvent::Change = event {
-                    // Logic to handle address bar change
+            |view, state, event, _window, cx| {
+                if let InputEvent::PressEnter { .. } = event {
+                    let url = state.read(cx).text().to_string();
+                    view.tabs.navigate(url);
+                    cx.notify();
                 }
             },
         )
@@ -108,8 +110,14 @@ impl BrowserView {
                 .py(px(6.))
                 .rounded_md()
                 .cursor_pointer()
-                .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
-                    view.tabs.switch_to(index);
+                .on_click(cx.listener(move |view: &mut BrowserView, _, window, cx| {
+                    if view.tabs.switch_to(index) {
+                        if let Some(tab) = view.tabs.active() {
+                            let url = tab.url.clone();
+                            view.address_bar
+                                .update(cx, |state, cx| state.set_value(url, window, cx));
+                        }
+                    }
                     cx.notify();
                 }));
 
@@ -134,8 +142,13 @@ impl BrowserView {
                 .rounded_full()
                 .px(px(8.))
                 .py(px(4.))
-                .on_click(cx.listener(|view: &mut BrowserView, _, _, cx| {
+                .on_click(cx.listener(|view: &mut BrowserView, _, window, cx| {
                     view.tabs.open_tab("New Tab", "about:blank");
+                    if let Some(tab) = view.tabs.active() {
+                        let url = tab.url.clone();
+                        view.address_bar
+                            .update(cx, |state, cx| state.set_value(url, window, cx));
+                    }
                     cx.notify();
                 })),
         );
