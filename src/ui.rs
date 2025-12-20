@@ -192,15 +192,15 @@ impl BrowserView {
                     .py(px(6.))
                     .disabled(!can_go_forward)
                     .on_click(cx.listener(|view: &mut BrowserView, _event, window, cx| {
-                         if let Some(tab) = view.tabs.active_mut() {
-                             if tab.go_forward() {
-                                 let new_url = tab.url().to_string();
-                                 view.address_bar.update(cx, |state, cx| {
-                                     state.set_value(new_url, window, cx);
-                                 });
-                                 cx.notify();
-                             }
-                         }
+                        if let Some(tab) = view.tabs.active_mut() {
+                            if tab.go_forward() {
+                                let new_url = tab.url().to_string();
+                                view.address_bar.update(cx, |state, cx| {
+                                    state.set_value(new_url, window, cx);
+                                });
+                                cx.notify();
+                            }
+                        }
                     })),
             )
             .child(
