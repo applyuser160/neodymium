@@ -16,11 +16,7 @@ impl Tab {
     }
 
     pub fn url(&self) -> &str {
-        if self.history.is_empty() {
-            "about:blank"
-        } else {
-            &self.history[self.current_index]
-        }
+        &self.history[self.current_index]
     }
 
     pub fn navigate<U: Into<String>>(&mut self, url: U) {
