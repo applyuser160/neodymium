@@ -18,7 +18,12 @@ impl RenderingEngine for HttpEngine {
     }
 
     fn render(&self, url: &str) -> String {
-        match reqwest::blocking::get(url) {
+        let trimmed = url.trim();
+        if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
+            return format!("Invalid URL: {}", url);
+        }
+
+        match reqwest::blocking::get(trimmed) {
             Ok(response) => match response.text() {
                 Ok(text) => text,
                 Err(e) => format!("Error reading body: {}", e),
