@@ -1,4 +1,5 @@
-use crate::engines::{EngineRegistry, HttpEngine};
+use crate::engines::EngineRegistry;
+use crate::http_engine::HttpEngine;
 use crate::tabs::TabManager;
 use gpui::{
     AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
@@ -18,7 +19,7 @@ pub struct BrowserView {
 impl BrowserView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let mut engines = EngineRegistry::new();
-        engines.register_rendering_engine(HttpEngine);
+        engines.register_rendering_engine(HttpEngine::new());
         engines.register_rendering_engine(BuiltinEngine {
             name: "Blink".to_string(),
             kind: EngineKind::Rendering,

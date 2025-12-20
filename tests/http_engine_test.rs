@@ -1,8 +1,9 @@
-use neodymium::engines::{HttpEngine, RenderingEngine};
+use neodymium::engines::RenderingEngine;
+use neodymium::http_engine::HttpEngine;
 
 #[test]
 fn test_http_engine_integration() {
-    let engine = HttpEngine;
+    let engine = HttpEngine::new();
 
     // Test name
     assert_eq!(engine.name(), "HTTP Engine");

@@ -9,30 +9,6 @@ pub trait RenderingEngine: Send + Sync {
     fn render(&self, url: &str) -> String;
 }
 
-
-pub struct HttpEngine;
-
-impl RenderingEngine for HttpEngine {
-    fn name(&self) -> &str {
-        "HTTP Engine"
-    }
-
-    fn render(&self, url: &str) -> String {
-        let trimmed = url.trim();
-        if !(trimmed.starts_with("http://") || trimmed.starts_with("https://")) {
-            return format!("Invalid URL: {}", url);
-        }
-
-        match reqwest::blocking::get(trimmed) {
-            Ok(response) => match response.text() {
-                Ok(text) => text,
-                Err(e) => format!("Error reading body: {}", e),
-            },
-            Err(e) => format!("Error connecting: {}", e),
-        }
-    }
-}
-
 /// A pluggable JavaScript engine that can be swapped at runtime.
 pub trait ScriptEngine: Send + Sync {
     fn name(&self) -> &str;
