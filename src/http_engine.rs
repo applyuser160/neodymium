@@ -7,6 +7,12 @@ pub struct HttpEngine {
     client: Client,
 }
 
+impl Default for HttpEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HttpEngine {
     pub fn new() -> Self {
         Self {

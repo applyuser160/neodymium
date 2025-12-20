@@ -18,7 +18,8 @@ fn test_http_engine_integration() {
 fn test_http_engine_success() {
     let mut server = mockito::Server::new();
     let url = server.url();
-    let _m = server.mock("GET", "/hello")
+    let _m = server
+        .mock("GET", "/hello")
         .with_status(200)
         .with_header("content-type", "text/plain")
         .with_body("world")
