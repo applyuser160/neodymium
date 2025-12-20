@@ -1,8 +1,8 @@
 use crate::engines::EngineRegistry;
 use crate::tabs::TabManager;
 use gpui::{
-    actions, AppContext, Context, Entity, InteractiveElement, IntoElement, KeyBinding, ParentElement,
-    Render, StatefulInteractiveElement, Styled, Window, div, px, rgb,
+    AppContext, Context, Entity, InteractiveElement, IntoElement, KeyBinding, ParentElement,
+    Render, StatefulInteractiveElement, Styled, Window, actions, div, px, rgb,
 };
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
@@ -87,13 +87,13 @@ impl Render for BrowserView {
                 this.tabs.close_active_tab();
                 cx.notify();
             }))
-            .on_action(cx.listener(
-                |this: &mut Self, _: &FocusAddressBar, window, cx| {
+            .on_action(
+                cx.listener(|this: &mut Self, _: &FocusAddressBar, window, cx| {
                     this.address_bar.update(cx, |state, cx| {
                         state.focus(window, cx);
                     });
-                },
-            ))
+                }),
+            )
             .on_action(cx.listener(|_: &mut Self, _: &ReloadPage, _, cx| {
                 // In a real implementation, this would trigger a reload of the current page's content.
                 // For now, we just notify the view to redraw.
