@@ -2,12 +2,14 @@ use crate::engines::EngineRegistry;
 use crate::http_engine::HttpEngine;
 use crate::tabs::TabManager;
 use gpui::{
-    AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
-    StatefulInteractiveElement, Styled, Window, div, px, rgb,
+    AppContext, Context, Entity, InteractiveElement, IntoElement, KeyBinding, ParentElement,
+    Render, StatefulInteractiveElement, Styled, Window, actions, div, px, rgb,
 };
 use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
 use gpui_component::input::{Input, InputEvent, InputState};
+
+actions!(browser, [NewTab, CloseTab, FocusAddressBar, ReloadPage]);
 
 /// The top-level view for the Chrome-inspired browser UI.
 pub struct BrowserView {
@@ -18,6 +20,16 @@ pub struct BrowserView {
 
 impl BrowserView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        cx.bind_keys([
+            KeyBinding::new("cmd-t", NewTab, None),
+            KeyBinding::new("ctrl-t", NewTab, None),
+            KeyBinding::new("cmd-w", CloseTab, None),
+            KeyBinding::new("ctrl-w", CloseTab, None),
+            KeyBinding::new("cmd-l", FocusAddressBar, None),
+            KeyBinding::new("ctrl-l", FocusAddressBar, None),
+            KeyBinding::new("cmd-r", ReloadPage, None),
+            KeyBinding::new("ctrl-r", ReloadPage, None),
+        ]);
         let mut engines = EngineRegistry::new();
         engines.register_rendering_engine(HttpEngine::new());
         engines.register_rendering_engine(BuiltinEngine {
@@ -69,6 +81,26 @@ impl Render for BrowserView {
             .bg(rgb(0x181a1b))
             .text_color(rgb(0xf0f0f0))
             .v_flex()
+            .on_action(cx.listener(|this: &mut Self, _: &NewTab, _, cx| {
+                this.tabs.open_tab("New Tab", "about:blank");
+                cx.notify();
+            }))
+            .on_action(cx.listener(|this: &mut Self, _: &CloseTab, _, cx| {
+                this.tabs.close_active_tab();
+                cx.notify();
+            }))
+            .on_action(
+                cx.listener(|this: &mut Self, _: &FocusAddressBar, window, cx| {
+                    this.address_bar.update(cx, |state, cx| {
+                        state.focus(window, cx);
+                    });
+                }),
+            )
+            .on_action(cx.listener(|_: &mut Self, _: &ReloadPage, _, cx| {
+                // In a real implementation, this would trigger a reload of the current page's content.
+                // For now, we just notify the view to redraw.
+                cx.notify();
+            }))
             .child(self.render_tab_strip(cx))
             .child(self.render_toolbar(cx))
             .child(self.render_content())
