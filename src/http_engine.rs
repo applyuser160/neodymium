@@ -1,5 +1,6 @@
 use crate::engines::RenderingEngine;
 use reqwest::blocking::Client;
+use std::time::Duration;
 
 pub struct HttpEngine {
     #[allow(dead_code)]
@@ -11,6 +12,7 @@ impl HttpEngine {
         Self {
             client: Client::builder()
                 .user_agent("Neodymium/0.1")
+                .timeout(Duration::from_secs(10))
                 .build()
                 .unwrap_or_default(),
         }
