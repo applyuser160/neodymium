@@ -14,7 +14,7 @@ impl HttpEngine {
                 .user_agent("Neodymium/0.1")
                 .timeout(Duration::from_secs(10))
                 .build()
-                .expect("failed to build HTTP client with configured settings"),
+                .unwrap_or_default(),
         }
     }
 }

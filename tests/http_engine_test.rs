@@ -13,3 +13,19 @@ fn test_http_engine_integration() {
     let result = engine.render("http://localhost:1");
     assert!(result.starts_with("Error connecting: "));
 }
+
+#[test]
+fn test_http_engine_success() {
+    let mut server = mockito::Server::new();
+    let url = server.url();
+    let _m = server.mock("GET", "/hello")
+        .with_status(200)
+        .with_header("content-type", "text/plain")
+        .with_body("world")
+        .create();
+
+    let engine = HttpEngine::new();
+    let result = engine.render(&format!("{}/hello", url));
+
+    assert_eq!(result, "world");
+}
