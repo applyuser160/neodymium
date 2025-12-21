@@ -16,7 +16,11 @@ impl Tab {
     }
 
     pub fn url(&self) -> &str {
-        &self.history[self.current_index]
+        if self.history.is_empty() {
+            "about:blank"
+        } else {
+            &self.history[self.current_index]
+        }
     }
 
     pub fn navigate<U: Into<String>>(&mut self, url: U) {
@@ -121,12 +125,6 @@ impl TabManager {
         self.tabs.get_mut(self.active_index)
     }
 
-    pub fn navigate(&mut self, url: impl Into<String>) {
-        if let Some(tab) = self.tabs.get_mut(self.active_index) {
-            tab.url = url.into();
-        }
-    }
-
     pub fn tabs(&self) -> &[Tab] {
         &self.tabs
     }
@@ -206,20 +204,5 @@ mod tests {
         manager.close_tab(0);
         assert_eq!(manager.tabs().len(), 0);
         assert_eq!(manager.active_index, 0); // Safety check
-    }
-
-    #[test]
-    fn test_navigate() {
-        let mut manager = TabManager::default();
-        manager.navigate("https://gpui.rs");
-        assert_eq!(manager.active().unwrap().url, "https://gpui.rs");
-
-        manager.open_tab("New Tab", "about:blank");
-        manager.navigate("https://google.com");
-        assert_eq!(manager.active().unwrap().url, "https://google.com");
-
-        // Verify first tab wasn't changed
-        manager.switch_to(0);
-        assert_eq!(manager.active().unwrap().url, "https://gpui.rs");
     }
 }

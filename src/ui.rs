@@ -4,8 +4,8 @@ use gpui::{
     AppContext, Context, Entity, InteractiveElement, IntoElement, ParentElement, Render,
     StatefulInteractiveElement, Styled, Window, div, px, rgb,
 };
-use gpui_component::StyledExt;
 use gpui_component::Disableable;
+use gpui_component::StyledExt;
 use gpui_component::button::{Button, ButtonVariants};
 use gpui_component::input::{Input, InputEvent, InputState};
 
@@ -42,22 +42,15 @@ impl BrowserView {
                 .placeholder("Search or enter address")
         });
 
-        cx.subscribe_in(
-            &address_bar,
-            window,
-            |view, state, event, _window, cx| {
-                if let InputEvent::PressEnter { .. } = event {
-                   let url = state.read(cx).value();
-                   if let Some(tab) = view.tabs.active_mut() {
-                       tab.navigate(url.clone());
-                       state.update(cx, |state, _cx| {
-                           state.set_value(url);
-                       });
-                       cx.notify();
-                   }
+        cx.subscribe_in(&address_bar, window, |view, state, event, _window, cx| {
+            if let InputEvent::PressEnter { .. } = event {
+                let url = state.read(cx).value();
+                if let Some(tab) = view.tabs.active_mut() {
+                    tab.navigate(url);
+                    cx.notify();
                 }
-            },
-        )
+            }
+        })
         .detach();
 
         Self {
@@ -116,10 +109,8 @@ impl BrowserView {
                 .py(px(6.))
                 .rounded_md()
                 .cursor_pointer()
-                .on_click(cx.listener(move |view: &mut BrowserView, _, window, cx| {
-                    if view.tabs.switch_to(index) {
-                        view.update_address_bar_from_active_tab(window, cx);
-                    }
+                .on_click(cx.listener(move |view: &mut BrowserView, _, _, cx| {
+                    view.tabs.switch_to(index);
                     cx.notify();
                 }));
 
@@ -144,9 +135,8 @@ impl BrowserView {
                 .rounded_full()
                 .px(px(8.))
                 .py(px(4.))
-                .on_click(cx.listener(|view: &mut BrowserView, _, window, cx| {
+                .on_click(cx.listener(|view: &mut BrowserView, _, _, cx| {
                     view.tabs.open_tab("New Tab", "about:blank");
-                    view.update_address_bar_from_active_tab(window, cx);
                     cx.notify();
                 })),
         );
@@ -156,8 +146,8 @@ impl BrowserView {
 
     fn render_toolbar(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let active_tab = self.tabs.active();
-        let can_go_back = active_tab.map_or(false, |t| t.can_go_back());
-        let can_go_forward = active_tab.map_or(false, |t| t.can_go_forward());
+        let can_go_back = active_tab.is_some_and(|t| t.can_go_back());
+        let can_go_forward = active_tab.is_some_and(|t| t.can_go_forward());
 
         div()
             .bg(rgb(0x1f2122))
@@ -223,14 +213,6 @@ impl BrowserView {
                     .px(px(10.))
                     .py(px(6.)),
             )
-    }
-
-    fn update_address_bar_from_active_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(tab) = self.tabs.active() {
-            let url = tab.url.clone();
-            self.address_bar
-                .update(cx, |state, cx| state.set_value(url, window, cx));
-        }
     }
 
     fn render_content(&self) -> impl IntoElement {
